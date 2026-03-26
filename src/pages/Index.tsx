@@ -1,6 +1,20 @@
 import { useState } from "react";
+import Icon from "@/components/ui/icon";
 
 const ORDERS_URL = "https://functions.poehali.dev/189ffcdc-e8c2-414c-810e-af093301abe5";
+
+type MenuItem = {
+  id: number;
+  name: string;
+  price: number;
+  description: string;
+  tag: string;
+  tagColor: string;
+  tagTextColor: string;
+  img: string;
+};
+
+type CartItem = MenuItem & { qty: number };
 
 type OrderForm = {
   name: string;
@@ -9,212 +23,325 @@ type OrderForm = {
   comment: string;
 };
 
-type ModalState = "idle" | "loading" | "success" | "error";
+type CheckoutStep = "cart" | "form" | "success";
+
+const MENU: MenuItem[] = [
+  {
+    id: 1,
+    name: "Роллекс Классик",
+    price: 590,
+    description: "Лосось, авокадо, сливочный сыр, огурец — 8 штук.",
+    tag: "Хит продаж",
+    tagColor: "var(--primary)",
+    tagTextColor: "#0d0d0d",
+    img: "https://images.unsplash.com/photo-1617196034183-421b4040ed20?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+  },
+  {
+    id: 2,
+    name: "Огненный Дракон",
+    price: 720,
+    description: "Угорь, острый соус чили, манго, кунжут.",
+    tag: "Острое",
+    tagColor: "var(--secondary)",
+    tagTextColor: "white",
+    img: "https://images.unsplash.com/photo-1563612116625-3012372fccce?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+  },
+  {
+    id: 3,
+    name: "Ретро Маки",
+    price: 480,
+    description: "Тунец, васаби, нори — минимализм в лучшем виде. Набор 6 штук.",
+    tag: "Новинка",
+    tagColor: "var(--accent)",
+    tagTextColor: "#0d0d0d",
+    img: "https://images.unsplash.com/photo-1611143669185-af224c5e3252?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+  },
+];
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "10px 14px",
+  border: "3px solid #c9a84c",
+  background: "#1a1a1a",
+  color: "#f5e6c0",
+  fontFamily: "Montserrat, sans-serif",
+  fontWeight: 600,
+  fontSize: "14px",
+  outline: "none",
+};
+
+const labelStyle: React.CSSProperties = {
+  display: "block",
+  fontWeight: 700,
+  fontSize: "13px",
+  marginBottom: "6px",
+  textTransform: "uppercase" as const,
+  color: "rgba(245,230,192,0.8)",
+};
 
 export default function Index() {
-  const [modalOpen, setModalOpen] = useState(false);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>("cart");
   const [form, setForm] = useState<OrderForm>({ name: "", phone: "", address: "", comment: "" });
-  const [modalState, setModalState] = useState<ModalState>("idle");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const openModal = () => {
-    setModalState("idle");
-    setForm({ name: "", phone: "", address: "", comment: "" });
-    setModalOpen(true);
+  const totalCount = cart.reduce((s, i) => s + i.qty, 0);
+  const totalPrice = cart.reduce((s, i) => s + i.price * i.qty, 0);
+
+  const addToCart = (item: MenuItem) => {
+    setCart((prev) => {
+      const found = prev.find((c) => c.id === item.id);
+      if (found) return prev.map((c) => c.id === item.id ? { ...c, qty: c.qty + 1 } : c);
+      return [...prev, { ...item, qty: 1 }];
+    });
+    setCartOpen(true);
   };
 
-  const closeModal = () => {
-    if (modalState === "loading") return;
-    setModalOpen(false);
+  const changeQty = (id: number, delta: number) => {
+    setCart((prev) =>
+      prev
+        .map((c) => c.id === id ? { ...c, qty: c.qty + delta } : c)
+        .filter((c) => c.qty > 0)
+    );
+  };
+
+  const openCart = () => {
+    setCheckoutStep("cart");
+    setError("");
+    setCartOpen(true);
+  };
+
+  const closeCart = () => {
+    if (loading) return;
+    setCartOpen(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setModalState("loading");
+    setLoading(true);
+    setError("");
+    const items = cart.map((c) => `${c.name} x${c.qty}`).join(", ");
     try {
       const res = await fetch(ORDERS_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, comment: `${items}${form.comment ? ". " + form.comment : ""}` }),
       });
       if (res.ok) {
-        setModalState("success");
+        setCheckoutStep("success");
+        setCart([]);
       } else {
-        setModalState("error");
+        setError("Что-то пошло не так. Попробуйте ещё раз.");
       }
     } catch {
-      setModalState("error");
+      setError("Ошибка соединения. Попробуйте ещё раз.");
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const inputStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "10px 14px",
-    border: "3px solid #c9a84c",
-    background: "#1a1a1a",
-    color: "#f5e6c0",
-    fontFamily: "Montserrat, sans-serif",
-    fontWeight: 600,
-    fontSize: "14px",
-    outline: "none",
-  };
-
-  const labelStyle: React.CSSProperties = {
-    display: "block",
-    fontWeight: 700,
-    fontSize: "13px",
-    marginBottom: "6px",
-    textTransform: "uppercase",
   };
 
   return (
     <>
       <div className="grain-overlay" />
 
-      {/* Modal */}
-      {modalOpen && (
+      {/* Cart Drawer */}
+      {cartOpen && (
         <div
-          onClick={closeModal}
+          onClick={closeCart}
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(0,0,0,0.75)",
+            background: "rgba(0,0,0,0.7)",
             zIndex: 9000,
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "20px",
+            justifyContent: "flex-end",
           }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: "#111111",
-              border: "var(--border)",
-              boxShadow: "var(--shadow)",
-              padding: "36px",
+              background: "#111",
+              border: "3px solid #c9a84c",
+              borderRight: "none",
               width: "100%",
               maxWidth: "480px",
-              position: "relative",
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
             }}
           >
-            <button
-              onClick={closeModal}
-              style={{
-                position: "absolute",
-                top: "14px",
-                right: "18px",
-                background: "none",
-                border: "none",
-                fontSize: "28px",
+            {/* Drawer header */}
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "24px",
+              borderBottom: "3px solid #c9a84c",
+            }}>
+              <h2 style={{
+                fontFamily: "Unbounded, sans-serif",
+                fontSize: "18px",
                 fontWeight: 800,
-                cursor: "pointer",
-                lineHeight: 1,
-                color: "var(--dark)",
-              }}
-            >
-              ×
-            </button>
-
-            {modalState === "success" ? (
-              <div style={{ textAlign: "center", padding: "20px 0" }}>
-                <div style={{ fontSize: "52px", marginBottom: "16px" }}>🍣</div>
-                <h2
-                  style={{
-                    fontFamily: "Unbounded, sans-serif",
-                    fontSize: "22px",
-                    fontWeight: 800,
-                    textTransform: "uppercase",
-                    marginBottom: "12px",
-                  }}
-                >
-                  ЗАКАЗ ПРИНЯТ!
-                </h2>
-                <p style={{ color: "#666", marginBottom: "24px", lineHeight: 1.6 }}>
-                  Мы уже готовим ваши роллы. Скоро позвоним для подтверждения!
-                </p>
-                <button className="btn-cta" style={{ background: "var(--accent)" }} onClick={closeModal}>
-                  Отлично!
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit}>
-                <h2
-                  style={{
-                    fontFamily: "Unbounded, sans-serif",
-                    fontSize: "20px",
-                    fontWeight: 800,
-                    textTransform: "uppercase",
-                    marginBottom: "24px",
-                  }}
-                >
-                  ОФОРМИТЬ ЗАКАЗ
-                </h2>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                  <div>
-                    <label style={labelStyle}>Имя *</label>
-                    <input
-                      required
-                      value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      placeholder="Ваше имя"
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Телефон *</label>
-                    <input
-                      required
-                      type="tel"
-                      value={form.phone}
-                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      placeholder="+7 (___) ___-__-__"
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Адрес доставки *</label>
-                    <input
-                      required
-                      value={form.address}
-                      onChange={(e) => setForm({ ...form, address: e.target.value })}
-                      placeholder="Улица, дом, квартира"
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Что заказываем?</label>
-                    <textarea
-                      value={form.comment}
-                      onChange={(e) => setForm({ ...form, comment: e.target.value })}
-                      placeholder="Роллекс Классик x2, Огненный Дракон x1..."
-                      rows={3}
-                      style={{ ...inputStyle, resize: "vertical" }}
-                    />
-                  </div>
-                </div>
-
-                {modalState === "error" && (
-                  <p style={{ color: "var(--primary)", fontWeight: 700, fontSize: "13px", marginTop: "12px" }}>
-                    Что-то пошло не так. Попробуйте ещё раз или позвоните нам.
-                  </p>
+                textTransform: "uppercase",
+                color: "var(--accent)",
+              }}>
+                {checkoutStep === "form" ? "← Оформление" : "Корзина"}
+                {checkoutStep === "cart" && totalCount > 0 && (
+                  <span style={{ marginLeft: "10px", background: "var(--accent)", color: "#0d0d0d", padding: "2px 8px", fontSize: "13px" }}>
+                    {totalCount}
+                  </span>
                 )}
+              </h2>
+              <button onClick={closeCart} style={{ background: "none", border: "none", color: "#f5e6c0", fontSize: "28px", fontWeight: 800, cursor: "pointer", lineHeight: 1 }}>
+                ×
+              </button>
+            </div>
 
-                <button
-                  type="submit"
-                  disabled={modalState === "loading"}
-                  className="btn-cta"
-                  style={{
-                    marginTop: "20px",
-                    width: "100%",
-                    background: "var(--primary)",
-                    color: "white",
-                    opacity: modalState === "loading" ? 0.6 : 1,
-                  }}
-                >
-                  {modalState === "loading" ? "Отправляем..." : "Оформить заказ →"}
-                </button>
-              </form>
+            {/* Drawer body */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "24px" }}>
+
+              {checkoutStep === "success" && (
+                <div style={{ textAlign: "center", paddingTop: "40px" }}>
+                  <div style={{ fontSize: "56px", marginBottom: "16px" }}>🍣</div>
+                  <h3 style={{ fontFamily: "Unbounded, sans-serif", fontSize: "20px", fontWeight: 800, textTransform: "uppercase", color: "var(--accent)", marginBottom: "12px" }}>
+                    ЗАКАЗ ПРИНЯТ!
+                  </h3>
+                  <p style={{ color: "rgba(245,230,192,0.7)", lineHeight: 1.6, marginBottom: "28px" }}>
+                    Мы уже готовим ваши роллы. Скоро позвоним для подтверждения!
+                  </p>
+                  <button className="btn-cta" onClick={closeCart}>
+                    Закрыть
+                  </button>
+                </div>
+              )}
+
+              {checkoutStep === "cart" && (
+                <>
+                  {cart.length === 0 ? (
+                    <div style={{ textAlign: "center", paddingTop: "60px", color: "rgba(245,230,192,0.4)" }}>
+                      <div style={{ fontSize: "48px", marginBottom: "16px" }}>🛒</div>
+                      <p style={{ fontWeight: 700, textTransform: "uppercase", fontSize: "14px" }}>Корзина пуста</p>
+                      <p style={{ fontSize: "13px", marginTop: "8px" }}>Добавьте роллы из меню</p>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                      {cart.map((item) => (
+                        <div key={item.id} style={{
+                          display: "flex",
+                          gap: "14px",
+                          alignItems: "center",
+                          padding: "14px",
+                          border: "2px solid #c9a84c33",
+                          background: "#1a1a1a",
+                        }}>
+                          <img src={item.img} alt={item.name} style={{ width: "64px", height: "64px", objectFit: "cover", flexShrink: 0 }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 700, fontSize: "14px", color: "#f5e6c0", marginBottom: "4px" }}>{item.name}</div>
+                            <div style={{ color: "var(--accent)", fontWeight: 800, fontSize: "16px" }}>{item.price * item.qty} ₽</div>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+                            <button
+                              onClick={() => changeQty(item.id, -1)}
+                              style={{ width: "30px", height: "30px", border: "2px solid #c9a84c", background: "none", color: "var(--accent)", fontSize: "18px", fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                            >−</button>
+                            <span style={{ fontWeight: 800, fontSize: "16px", color: "#f5e6c0", minWidth: "20px", textAlign: "center" }}>{item.qty}</span>
+                            <button
+                              onClick={() => changeQty(item.id, 1)}
+                              style={{ width: "30px", height: "30px", border: "2px solid #c9a84c", background: "none", color: "var(--accent)", fontSize: "18px", fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                            >+</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {checkoutStep === "form" && (
+                <form id="order-form" onSubmit={handleSubmit}>
+                  {/* Order summary */}
+                  <div style={{ padding: "14px", background: "#1a1a1a", border: "2px solid #c9a84c33", marginBottom: "24px" }}>
+                    {cart.map((item) => (
+                      <div key={item.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", color: "rgba(245,230,192,0.7)", marginBottom: "6px" }}>
+                        <span>{item.name} × {item.qty}</span>
+                        <span style={{ color: "var(--accent)", fontWeight: 700 }}>{item.price * item.qty} ₽</span>
+                      </div>
+                    ))}
+                    <div style={{ borderTop: "1px solid #c9a84c44", marginTop: "10px", paddingTop: "10px", display: "flex", justifyContent: "space-between", fontWeight: 800, color: "#f5e6c0" }}>
+                      <span>ИТОГО</span>
+                      <span style={{ color: "var(--accent)" }}>{totalPrice} ₽</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                    <div>
+                      <label style={labelStyle}>Имя *</label>
+                      <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ваше имя" style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Телефон *</label>
+                      <input required type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+7 (___) ___-__-__" style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Адрес доставки *</label>
+                      <input required value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Улица, дом, квартира" style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Комментарий</label>
+                      <textarea value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} placeholder="Пожелания к заказу..." rows={3} style={{ ...inputStyle, resize: "vertical" }} />
+                    </div>
+                  </div>
+
+                  {error && (
+                    <p style={{ color: "var(--primary)", fontWeight: 700, fontSize: "13px", marginTop: "12px" }}>{error}</p>
+                  )}
+                </form>
+              )}
+            </div>
+
+            {/* Drawer footer */}
+            {checkoutStep !== "success" && (
+              <div style={{ padding: "24px", borderTop: "3px solid #c9a84c" }}>
+                {checkoutStep === "cart" ? (
+                  <>
+                    {cart.length > 0 && (
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px", fontWeight: 800, fontSize: "18px" }}>
+                        <span style={{ color: "rgba(245,230,192,0.7)" }}>Итого:</span>
+                        <span style={{ color: "var(--accent)" }}>{totalPrice} ₽</span>
+                      </div>
+                    )}
+                    <button
+                      className="btn-cta"
+                      disabled={cart.length === 0}
+                      onClick={() => { setCheckoutStep("form"); setError(""); }}
+                      style={{ width: "100%", background: cart.length === 0 ? "#333" : "var(--accent)", color: "#0d0d0d", opacity: cart.length === 0 ? 0.5 : 1 }}
+                    >
+                      Перейти к оформлению →
+                    </button>
+                  </>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <button
+                      type="submit"
+                      form="order-form"
+                      disabled={loading}
+                      className="btn-cta"
+                      style={{ width: "100%", background: "var(--accent)", color: "#0d0d0d", opacity: loading ? 0.6 : 1 }}
+                    >
+                      {loading ? "Отправляем..." : `Оформить заказ — ${totalPrice} ₽`}
+                    </button>
+                    <button
+                      onClick={() => setCheckoutStep("cart")}
+                      style={{ background: "none", border: "none", color: "rgba(245,230,192,0.5)", fontWeight: 700, fontSize: "13px", cursor: "pointer", textTransform: "uppercase" }}
+                    >
+                      ← Вернуться в корзину
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -228,7 +355,29 @@ export default function Index() {
           <a href="#">Акции</a>
           <a href="#">Доставка</a>
         </nav>
-        <button className="btn-cta" onClick={openModal}>Заказать</button>
+        <button className="btn-cta" onClick={openCart} style={{ position: "relative" }}>
+          <Icon name="ShoppingCart" size={16} style={{ display: "inline", marginRight: "6px", verticalAlign: "middle" }} />
+          Корзина
+          {totalCount > 0 && (
+            <span style={{
+              position: "absolute",
+              top: "-8px",
+              right: "-8px",
+              background: "var(--primary)",
+              color: "#0d0d0d",
+              borderRadius: "50%",
+              width: "20px",
+              height: "20px",
+              fontSize: "11px",
+              fontWeight: 900,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}>
+              {totalCount}
+            </span>
+          )}
+        </button>
       </header>
 
       <main>
@@ -243,7 +392,7 @@ export default function Index() {
               Свежие роллы с доставкой до твоей двери. Рис идеальной текстуры, лосось в маринаде и соусы собственного производства — ретро-вайб, современный вкус.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
-              <button className="btn-cta" style={{ background: "var(--primary)", color: "white" }} onClick={openModal}>
+              <button className="btn-cta" style={{ background: "var(--primary)", color: "#0d0d0d" }} onClick={openCart}>
                 Заказать сейчас
               </button>
               <button className="btn-cta" style={{ background: "transparent", color: "var(--dark)" }}>
@@ -257,17 +406,9 @@ export default function Index() {
               alt="Роллекс - свежие роллы"
               style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }}
             />
-            <div className="sticker">
-              СВЕЖАК
-              <br />
-              КАЖДЫЙ ДЕНЬ
-            </div>
-            <div className="floating-tag hidden md:block" style={{ top: "20%", left: "10%" }}>
-              #РОЛЛЕКС
-            </div>
-            <div className="floating-tag hidden md:block" style={{ bottom: "30%", right: "20%" }}>
-              ОГОНЬ 🔥
-            </div>
+            <div className="sticker">СВЕЖАК<br />КАЖДЫЙ ДЕНЬ</div>
+            <div className="floating-tag hidden md:block" style={{ top: "20%", left: "10%" }}>#РОЛЛЕКС</div>
+            <div className="floating-tag hidden md:block" style={{ bottom: "30%", right: "20%" }}>ОГОНЬ 🔥</div>
           </div>
         </section>
 
@@ -287,63 +428,44 @@ export default function Index() {
           </div>
 
           <div className="menu-grid">
-            <div className="menu-card">
-              <span className="menu-tag">Хит продаж</span>
-              <img
-                src="https://images.unsplash.com/photo-1617196034183-421b4040ed20?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
-                alt="Роллекс Классик"
-              />
-              <div className="menu-card-body">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                  <h3>Роллекс Классик</h3>
-                  <span className="price">590 ₽</span>
-                </div>
-                <p style={{ fontSize: "14px", color: "rgba(245,230,192,0.65)" }}>
-                  Лосось, авокадо, сливочный сыр, огурец — 8 штук. Проверенная классика, которую любят все.
-                </p>
-                <button className="btn-cta" style={{ marginTop: "14px", width: "100%", background: "var(--accent)", color: "#0d0d0d" }} onClick={openModal}>
-                  Заказать
-                </button>
-              </div>
-            </div>
+            {MENU.map((item) => {
+              const inCart = cart.find((c) => c.id === item.id);
+              return (
+                <div key={item.id} className="menu-card">
+                  <span className="menu-tag" style={{ background: item.tagColor, color: item.tagTextColor }}>{item.tag}</span>
+                  <img src={item.img} alt={item.name} />
+                  <div className="menu-card-body">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                      <h3>{item.name}</h3>
+                      <span className="price">{item.price} ₽</span>
+                    </div>
+                    <p style={{ fontSize: "14px", color: "rgba(245,230,192,0.65)", marginBottom: "14px" }}>{item.description}</p>
 
-            <div className="menu-card">
-              <span className="menu-tag" style={{ background: "var(--secondary)" }}>Острое</span>
-              <img
-                src="https://images.unsplash.com/photo-1563612116625-3012372fccce?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
-                alt="Огненный дракон"
-              />
-              <div className="menu-card-body">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                  <h3>Огненный Дракон</h3>
-                  <span className="price">720 ₽</span>
+                    {inCart ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: "0", border: "3px solid #c9a84c" }}>
+                        <button
+                          onClick={() => changeQty(item.id, -1)}
+                          style={{ flex: 1, padding: "10px", background: "none", border: "none", color: "var(--accent)", fontSize: "20px", fontWeight: 800, cursor: "pointer" }}
+                        >−</button>
+                        <span style={{ padding: "10px 16px", fontWeight: 800, color: "#f5e6c0", fontSize: "15px", borderLeft: "2px solid #c9a84c44", borderRight: "2px solid #c9a84c44" }}>{inCart.qty}</span>
+                        <button
+                          onClick={() => changeQty(item.id, 1)}
+                          style={{ flex: 1, padding: "10px", background: "none", border: "none", color: "var(--accent)", fontSize: "20px", fontWeight: 800, cursor: "pointer" }}
+                        >+</button>
+                      </div>
+                    ) : (
+                      <button
+                        className="btn-cta"
+                        style={{ width: "100%", background: "var(--accent)", color: "#0d0d0d" }}
+                        onClick={() => addToCart(item)}
+                      >
+                        В корзину
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <p style={{ fontSize: "14px", color: "rgba(245,230,192,0.65)" }}>Угорь, острый соус чили, манго, кунжут. Для тех, кто любит погорячее.</p>
-                <button className="btn-cta" style={{ marginTop: "14px", width: "100%", background: "var(--accent)", color: "#0d0d0d" }} onClick={openModal}>
-                  Заказать
-                </button>
-              </div>
-            </div>
-
-            <div className="menu-card">
-              <span className="menu-tag" style={{ background: "var(--accent)", color: "#0d0d0d" }}>Новинка</span>
-              <img
-                src="https://images.unsplash.com/photo-1611143669185-af224c5e3252?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
-                alt="Ретро Маки"
-              />
-              <div className="menu-card-body">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                  <h3>Ретро Маки</h3>
-                  <span className="price">480 ₽</span>
-                </div>
-                <p style={{ fontSize: "14px", color: "rgba(245,230,192,0.65)" }}>
-                  Тунец, васаби, нори — минимализм в лучшем виде. Набор 6 штук.
-                </p>
-                <button className="btn-cta" style={{ marginTop: "14px", width: "100%", background: "var(--accent)", color: "#0d0d0d" }} onClick={openModal}>
-                  Заказать
-                </button>
-              </div>
-            </div>
+              );
+            })}
           </div>
         </section>
 
@@ -353,7 +475,7 @@ export default function Index() {
             <p className="vibe-text">
               Каждый день — новая рыба. Мы работаем только с проверенными поставщиками, рис готовим по японской технологии, а соусы варим сами. Роллекс — это не просто доставка, это вкус, которому доверяют.
             </p>
-            <button className="btn-cta" style={{ background: "#0d0d0d", color: "var(--accent)", borderColor: "var(--accent)" }} onClick={openModal}>
+            <button className="btn-cta" style={{ background: "#0d0d0d", color: "var(--accent)", borderColor: "var(--accent)" }} onClick={openCart}>
               Заказать сейчас
             </button>
           </div>
