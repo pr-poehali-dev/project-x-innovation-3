@@ -1,0 +1,29 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Создать заказ",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "name": "Иван Тестов",
+        "phone": "+7 999 123-45-67",
+        "address": "ул. Ленина, 1, кв. 10",
+        "comment": "Побыстрее пожалуйста"
+      },
+      "expectedStatus": 200
+    },
+    {
+      "name": "Ошибка без телефона",
+      "method": "POST",
+      "path": "/",
+      "body": { "name": "Иван" },
+      "expectedStatus": 400
+    }
+  ]
+}
