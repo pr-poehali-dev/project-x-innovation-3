@@ -49,8 +49,9 @@ export default function Index() {
   const inputStyle: React.CSSProperties = {
     width: "100%",
     padding: "10px 14px",
-    border: "3px solid #1a1a1a",
-    background: "white",
+    border: "3px solid #c9a84c",
+    background: "#1a1a1a",
+    color: "#f5e6c0",
     fontFamily: "Montserrat, sans-serif",
     fontWeight: 600,
     fontSize: "14px",
@@ -87,7 +88,7 @@ export default function Index() {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: "var(--bg)",
+              background: "#111111",
               border: "var(--border)",
               boxShadow: "var(--shadow)",
               padding: "36px",
@@ -238,14 +239,14 @@ export default function Index() {
               <br />
               КОТОРЫЕ <span>РВУТ</span>
             </h1>
-            <p className="text-base md:text-lg lg:text-xl mb-8 md:mb-10 leading-relaxed text-[#555]">
+            <p className="text-base md:text-lg lg:text-xl mb-8 md:mb-10 leading-relaxed" style={{ color: "rgba(245,230,192,0.7)" }}>
               Свежие роллы с доставкой до твоей двери. Рис идеальной текстуры, лосось в маринаде и соусы собственного производства — ретро-вайб, современный вкус.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
               <button className="btn-cta" style={{ background: "var(--primary)", color: "white" }} onClick={openModal}>
                 Заказать сейчас
               </button>
-              <button className="btn-cta" style={{ background: "white" }}>
+              <button className="btn-cta" style={{ background: "transparent", color: "var(--dark)" }}>
                 Смотреть меню
               </button>
             </div>
@@ -297,10 +298,10 @@ export default function Index() {
                   <h3>Роллекс Классик</h3>
                   <span className="price">590 ₽</span>
                 </div>
-                <p style={{ fontSize: "14px", color: "#666" }}>
+                <p style={{ fontSize: "14px", color: "rgba(245,230,192,0.65)" }}>
                   Лосось, авокадо, сливочный сыр, огурец — 8 штук. Проверенная классика, которую любят все.
                 </p>
-                <button className="btn-cta" style={{ marginTop: "14px", width: "100%", background: "var(--dark)", color: "white" }} onClick={openModal}>
+                <button className="btn-cta" style={{ marginTop: "14px", width: "100%", background: "var(--accent)", color: "#0d0d0d" }} onClick={openModal}>
                   Заказать
                 </button>
               </div>
@@ -317,15 +318,15 @@ export default function Index() {
                   <h3>Огненный Дракон</h3>
                   <span className="price">720 ₽</span>
                 </div>
-                <p style={{ fontSize: "14px", color: "#666" }}>Угорь, острый соус чили, манго, кунжут. Для тех, кто любит погорячее.</p>
-                <button className="btn-cta" style={{ marginTop: "14px", width: "100%", background: "var(--dark)", color: "white" }} onClick={openModal}>
+                <p style={{ fontSize: "14px", color: "rgba(245,230,192,0.65)" }}>Угорь, острый соус чили, манго, кунжут. Для тех, кто любит погорячее.</p>
+                <button className="btn-cta" style={{ marginTop: "14px", width: "100%", background: "var(--accent)", color: "#0d0d0d" }} onClick={openModal}>
                   Заказать
                 </button>
               </div>
             </div>
 
             <div className="menu-card">
-              <span className="menu-tag" style={{ background: "var(--accent)", color: "var(--dark)" }}>Новинка</span>
+              <span className="menu-tag" style={{ background: "var(--accent)", color: "#0d0d0d" }}>Новинка</span>
               <img
                 src="https://images.unsplash.com/photo-1611143669185-af224c5e3252?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
                 alt="Ретро Маки"
@@ -335,10 +336,10 @@ export default function Index() {
                   <h3>Ретро Маки</h3>
                   <span className="price">480 ₽</span>
                 </div>
-                <p style={{ fontSize: "14px", color: "#666" }}>
+                <p style={{ fontSize: "14px", color: "rgba(245,230,192,0.65)" }}>
                   Тунец, васаби, нори — минимализм в лучшем виде. Набор 6 штук.
                 </p>
-                <button className="btn-cta" style={{ marginTop: "14px", width: "100%", background: "var(--dark)", color: "white" }} onClick={openModal}>
+                <button className="btn-cta" style={{ marginTop: "14px", width: "100%", background: "var(--accent)", color: "#0d0d0d" }} onClick={openModal}>
                   Заказать
                 </button>
               </div>
@@ -352,7 +353,7 @@ export default function Index() {
             <p className="vibe-text">
               Каждый день — новая рыба. Мы работаем только с проверенными поставщиками, рис готовим по японской технологии, а соусы варим сами. Роллекс — это не просто доставка, это вкус, которому доверяют.
             </p>
-            <button className="btn-cta" style={{ background: "var(--dark)", color: "white", borderColor: "white" }} onClick={openModal}>
+            <button className="btn-cta" style={{ background: "#0d0d0d", color: "var(--accent)", borderColor: "var(--accent)" }} onClick={openModal}>
               Заказать сейчас
             </button>
           </div>
@@ -383,7 +384,7 @@ export default function Index() {
       <footer>
         <div>
           <div className="footer-logo">РОЛЛЕКС</div>
-          <p style={{ color: "#666", lineHeight: 1.6 }}>
+          <p style={{ color: "rgba(245,230,192,0.6)", lineHeight: 1.6 }}>
             Доставка роллов в ретро-стиле. Свежо, вкусно и быстро — с 2024, но ощущается как культовое место.
           </p>
         </div>
